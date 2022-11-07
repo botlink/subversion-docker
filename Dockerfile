@@ -74,9 +74,16 @@ RUN mv /var/www/websvn-*/* /var/www/html/
 RUN chown -R www-data:www-data /var/www/html
 RUN rm /var/www/html/index.html
 RUN cp /var/www/html/include/distconfig.php /var/www/html/include/config.php
+# Allow file downloads
+## TODO: a config envvar or volume would be good to adjust config.php without re-building the image
+RUN sed -i 's_// $config->allowDownload()_$config->allowDownload()_' /var/www/html/include/config.php
+RUN sed -i 's_// $config->setDefaultFileDlMode_$config->setDefaultFileDlMode_' /var/www/html/include/config.php
+RUN sed -i 's_// $config->setDefaultDirectoryDlMode_$config->setDefaultDirectoryDlMode_' /var/www/html/include/config.php
+# Make an example repo; this is only visible if users don't mount a volume over it
 RUN mkdir -p /var/lib/svn/FirstRepo
 RUN svnadmin create --fs-type fsfs /var/lib/svn/FirstRepo
 RUN chmod -R 775 /var/lib/svn
+# Expose all repos from /var/lib/svn via WebSVN and DAV svn
 RUN echo "\$config->parentPath(\"/var/lib/svn\");"  >> /var/www/html/include/config.php
 RUN  echo "<Location /svn> \n  DAV svn \n  SVNParentPath /var/lib/svn \n </Location>" >> /etc/apache2/mods-enabled/dav_svn.conf
 COPY apache2.sh /bin/apache2.sh
